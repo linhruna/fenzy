@@ -22,12 +22,9 @@ app.use(
     cors({
         origin: (origin, callback) => {
             const allowedOrigins = [
-              "https://foodie-frenzy-frontend-eone.onrender.com",
-              "https://foodie-frenzy-admin.onrender.com",
-              "http://localhost:3000",
-              "http://localhost:5173",
-              "http://127.0.0.1:5173",
-              "http://127.0.0.1:3000"
+              "https://fen.onrender.com",
+              "https://food-order-web-pvuv.onrender.com"
+              
             ];
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
