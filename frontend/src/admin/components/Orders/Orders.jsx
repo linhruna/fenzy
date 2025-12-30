@@ -13,7 +13,7 @@ const Orders = () => {
     const fetchOrders = async () => {
       try {
         const response = await axios.get(
-          "https://foodie-frenzy-backend.onrender.com/api/orders/getall",
+          "https://food-order-web-pvuv.onrender.com//orders/getall",
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

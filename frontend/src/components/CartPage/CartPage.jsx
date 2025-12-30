@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { FaMinus, FaPlus, FaTrash, FaTimes } from 'react-icons/fa';
 
 // Base URL for serving uploaded images
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://food-order-web-pvuv.onrender.com';
 
 const CartPage = () => {
   const { cartItems, removeFromCart, updateQuantity, totalAmount } = useCart();
