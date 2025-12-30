@@ -74,7 +74,8 @@ const CheckoutPage = () => {
         name: item.name,
         price: item.price,
         quantity,
-        imageUrl: item.imageUrl || ''
+        imageUrl: item.imageUrl || '',
+        itemId: item._id // Add itemId to track the original item
       }))
     };
 

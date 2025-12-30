@@ -1,6 +1,7 @@
 // controllers/orderController.js
 import Stripe from 'stripe';
 import Order from '../modals/order.js';
+import Item from '../modals/item.js';
 import 'dotenv/config';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -20,7 +21,7 @@ export const createOrder = async (req, res) => {
         }
 
         // Normalize incoming item structure
-        const orderItems = items.map(({ item, name, price, imageUrl, quantity }) => {
+        const orderItems = items.map(({ item, name, price, imageUrl, quantity, itemId }) => {
             const base = item || {};
             return {
                 item: {
@@ -28,9 +29,24 @@ export const createOrder = async (req, res) => {
                     price: Number(base.price ?? price) || 0,
                     imageUrl: base.imageUrl || imageUrl || ''
                 },
+                itemId: itemId || base._id || base.itemId || null,
                 quantity: Number(quantity) || 0
             };
         });
+
+        // Decrease item quantities for COD orders (immediately) or online orders (after payment confirmation)
+        // For COD, decrease immediately. For online, we'll decrease in confirmPayment
+        if (paymentMethod !== 'online') {
+            for (const orderItem of orderItems) {
+                if (orderItem.itemId) {
+                    const item = await Item.findById(orderItem.itemId);
+                    if (item) {
+                        item.quantity = Math.max(0, item.quantity - orderItem.quantity);
+                        await item.save();
+                    }
+                }
+            }
+        }
 
         // Default shipping cost
         const shippingCost = 0;
@@ -104,6 +120,18 @@ export const confirmPayment = async (req, res) => {
                 { new: true }
             );
             if (!order) return res.status(404).json({ message: 'Order not found' });
+            
+            // Decrease item quantities now that payment is confirmed
+            for (const orderItem of order.items) {
+                if (orderItem.itemId) {
+                    const item = await Item.findById(orderItem.itemId);
+                    if (item) {
+                        item.quantity = Math.max(0, item.quantity - orderItem.quantity);
+                        await item.save();
+                    }
+                }
+            }
+            
             return res.json(order);
         }
         return res.status(400).json({ message: 'Payment not completed' });
@@ -239,6 +267,119 @@ export const updateOrder = async (req, res) => {
         res.json(updated);
     } catch (error) {
         console.error('updateOrder error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// Cancel Order (for users - only their own orders)
+export const cancelOrder = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        // Check ownership (user can only cancel their own orders)
+        if (!order.user.equals(req.user._id)) {
+            return res.status(403).json({ message: 'Access denied. You can only cancel your own orders.' });
+        }
+
+        // Check if order can be cancelled
+        if (order.status === 'cancelled') {
+            return res.status(400).json({ message: 'Order is already cancelled' });
+        }
+
+        if (order.status === 'delivered') {
+            return res.status(400).json({ message: 'Cannot cancel a delivered order' });
+        }
+
+        // Handle refund for online payments if payment was successful
+        if (order.paymentMethod === 'online' && order.paymentStatus === 'succeeded' && order.paymentIntentId) {
+            try {
+                // Refund the payment through Stripe
+                const refund = await stripe.refunds.create({
+                    payment_intent: order.paymentIntentId,
+                });
+                console.log('Refund processed:', refund.id);
+            } catch (stripeError) {
+                console.error('Stripe refund error:', stripeError);
+                // Continue with cancellation even if refund fails (log the error)
+            }
+        }
+
+        // Restore item quantities
+        for (const orderItem of order.items) {
+            if (orderItem.itemId) {
+                const item = await Item.findById(orderItem.itemId);
+                if (item) {
+                    item.quantity = item.quantity + orderItem.quantity;
+                    await item.save();
+                }
+            }
+        }
+
+        // Update order status to cancelled
+        const updated = await Order.findByIdAndUpdate(
+            req.params.id,
+            { status: 'cancelled' },
+            { new: true }
+        );
+
+        res.json({ message: 'Order cancelled successfully', order: updated });
+    } catch (error) {
+        console.error('cancelOrder error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// Cancel Order (for admin - can cancel any order)
+export const cancelOrderAdmin = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        // Check if order can be cancelled
+        if (order.status === 'cancelled') {
+            return res.status(400).json({ message: 'Order is already cancelled' });
+        }
+
+        if (order.status === 'delivered') {
+            return res.status(400).json({ message: 'Cannot cancel a delivered order' });
+        }
+
+        // Handle refund for online payments if payment was successful
+        if (order.paymentMethod === 'online' && order.paymentStatus === 'succeeded' && order.paymentIntentId) {
+            try {
+                // Refund the payment through Stripe
+                const refund = await stripe.refunds.create({
+                    payment_intent: order.paymentIntentId,
+                });
+                console.log('Refund processed:', refund.id);
+            } catch (stripeError) {
+                console.error('Stripe refund error:', stripeError);
+                // Continue with cancellation even if refund fails (log the error)
+            }
+        }
+
+        // Restore item quantities
+        for (const orderItem of order.items) {
+            if (orderItem.itemId) {
+                const item = await Item.findById(orderItem.itemId);
+                if (item) {
+                    item.quantity = item.quantity + orderItem.quantity;
+                    await item.save();
+                }
+            }
+        }
+
+        // Update order status to cancelled
+        const updated = await Order.findByIdAndUpdate(
+            req.params.id,
+            { status: 'cancelled' },
+            { new: true }
+        );
+
+        res.json({ message: 'Order cancelled successfully', order: updated });
+    } catch (error) {
+        console.error('cancelOrderAdmin error:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };

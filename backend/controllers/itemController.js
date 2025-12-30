@@ -20,7 +20,15 @@ export const createItem = async (req, res, next) => {
         });
 
         const saved = await newItem.save();
-        res.status(201).json(saved);
+        
+        // Thêm host prefix vào imageUrl giống như getItems
+        const host = `${req.protocol}://${req.get('host')}`;
+        const responseItem = {
+            ...saved.toObject(),
+            imageUrl: saved.imageUrl ? host + saved.imageUrl : '',
+        };
+        
+        res.status(201).json(responseItem);
     } catch (err) {
         if (err.code === 11000) {
             res.status(400).json({ message: 'Item name already exists' });
@@ -87,7 +95,14 @@ export const updateItem = async (req, res, next) => {
             { new: true }
         );
 
-        res.json(updatedItem);
+        // Thêm host prefix vào imageUrl giống như getItems
+        const host = `${req.protocol}://${req.get('host')}`;
+        const responseItem = {
+            ...updatedItem.toObject(),
+            imageUrl: updatedItem.imageUrl ? host + updatedItem.imageUrl : '',
+        };
+
+        res.json(responseItem);
     } catch (err) {
         next(err);
     }
@@ -109,7 +124,15 @@ export const quickUpdateItem = async (req, res, next) => {
         );
 
         if (!updatedItem) return res.status(404).json({ message: 'Item not found' });
-        res.json(updatedItem);
+
+        // Thêm host prefix vào imageUrl giống như getItems
+        const host = `${req.protocol}://${req.get('host')}`;
+        const responseItem = {
+            ...updatedItem.toObject(),
+            imageUrl: updatedItem.imageUrl ? host + updatedItem.imageUrl : '',
+        };
+
+        res.json(responseItem);
     } catch (err) {
         next(err);
     }

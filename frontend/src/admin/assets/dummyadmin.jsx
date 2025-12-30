@@ -1,7 +1,7 @@
 import {
     FiPlusCircle,
     FiList,
-    FiPackage,FiTruck, FiCheckCircle, FiClock,
+    FiPackage,FiTruck, FiCheckCircle, FiClock, FiXCircle,
 } from 'react-icons/fi';
 
 
@@ -81,6 +81,7 @@ export const iconMap = {
     FiClock: <FiClock className="text-lg" />,
     FiTruck: <FiTruck className="text-lg" />,
     FiCheckCircle: <FiCheckCircle className="text-lg" />,
+    FiXCircle: <FiXCircle className="text-lg" />,
 };
 
 // Status styles for order statuses
@@ -104,6 +105,13 @@ export const statusStyles = {
         bg: 'bg-green-900/20',
         icon: 'FiCheckCircle',
         label: 'Delivered',
+        hideLabel: false,
+    },
+    cancelled: {
+        color: 'text-red-400',
+        bg: 'bg-red-900/20',
+        icon: 'FiXCircle',
+        label: 'Cancelled',
         hideLabel: false,
     },
     succeeded: {

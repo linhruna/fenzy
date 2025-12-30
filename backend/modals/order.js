@@ -7,6 +7,11 @@ const orderItemSchema = new mongoose.Schema({
     price: { type: Number, required: true, min: 0 },
     imageUrl: { type: String, required: true }
   },
+  itemId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Item',
+    required: false // Optional for backward compatibility
+  },
   quantity: { type: Number, required: true, min: 1 }
 }, { _id: true });
 
@@ -55,7 +60,7 @@ const orderSchema = new mongoose.Schema({
   // Order Status Tracking
   status: {
     type: String,
-    enum: ['processing', 'outForDelivery', 'delivered'],
+    enum: ['processing', 'outForDelivery', 'delivered', 'cancelled'],
     default: 'processing',
     index: true
   },

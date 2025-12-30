@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiBox } from 'react-icons/fi';
+import { FiUser, FiBox, FiXCircle } from 'react-icons/fi';
 import apiClient from '../../../services/api';
 import { statusStyles, paymentMethodDetails, tableClasses, layoutClasses, iconMap } from '../../../admin/assets/dummyadmin';
 
@@ -48,6 +48,34 @@ const Orders = () => {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
+
+    try {
+      await apiClient.post(`/api/orders/getall/${orderId}/cancel`);
+      alert('Order cancelled successfully');
+      // Refresh orders list
+      const response = await apiClient.get('/api/orders/getall');
+      const formatted = response.data.map(order => ({
+        ...order,
+        address: order.address ?? order.shippingAddress?.address ?? '',
+        city: order.city ?? order.shippingAddress?.city ?? '',
+        zipCode: order.zipCode ?? order.shippingAddress?.zipCode ?? '',
+        phone: order.phone ?? '',
+        items: order.items?.map(e => ({ _id: e._id, item: e.item, quantity: e.quantity })) || [],
+        createdAt: new Date(order.createdAt).toLocaleDateString('en-IN', {
+          year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+        }),
+      }));
+      setOrders(formatted);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel order. Please try again.');
+      console.error('Error cancelling order:', err);
+    }
+  };
+
   if (loading) return (
     <div className={layoutClasses.page + ' flex items-center justify-center'}>
       <div className="text-amber-400 text-xl">Loading orders...</div>
@@ -72,7 +100,7 @@ const Orders = () => {
               <table className={tableClasses.table}>
                 <thead className={tableClasses.headerRow}>
                   <tr>
-                    {['Order ID', 'Customer', 'Address', 'Items', 'Total Items', 'Price', 'Payment', 'Status'].map(h => (
+                    {['Order ID', 'Customer', 'Address', 'Items', 'Total Items', 'Price', 'Payment', 'Status', 'Actions'].map(h => (
                       <th key={h} className={tableClasses.headerCell + (h === 'Total Items' ? ' text-center' : '')}>{h}</th>
                     ))}
                   </tr>
@@ -186,7 +214,7 @@ const Orders = () => {
                               className={`px-4 py-2 rounded-lg ${stat.bg} ${stat.color} border border-amber-500/20 text-sm cursor-pointer`}
                             >
                               {Object.entries(statusStyles)
-                                .filter(([k]) => k !== "succeeded")
+                                .filter(([k]) => k !== "succeeded" && k !== "pending")
                                 .map(([key, sty]) => (
                                   <option
                                     key={key}
@@ -198,6 +226,20 @@ const Orders = () => {
                                 ))}
                             </select>
                           </div>
+                        </td>
+                        <td className={tableClasses.cellBase}>
+                          {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                            <button
+                              onClick={() => handleCancelOrder(order._id)}
+                              className="px-3 py-2 bg-red-600/30 hover:bg-red-600/50 text-red-300 border border-red-500/50 rounded-lg text-sm transition-colors flex items-center gap-2"
+                            >
+                              <FiXCircle className="text-base" />
+                              Cancel
+                            </button>
+                          )}
+                          {(order.status === 'cancelled' || order.status === 'delivered') && (
+                            <span className="text-amber-400/60 text-sm">-</span>
+                          )}
                         </td>
                       </tr>
                     );

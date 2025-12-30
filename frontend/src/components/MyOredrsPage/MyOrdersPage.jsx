@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiTruck, FiCheckCircle, FiClock, FiArrowLeft, FiUser, FiMapPin, FiBox } from 'react-icons/fi';
+import { FiTruck, FiCheckCircle, FiClock, FiArrowLeft, FiUser, FiMapPin, FiBox, FiXCircle } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import apiClient from '../../services/api';
 import { useCart } from '../../CartContext/CartContext';
@@ -50,6 +50,45 @@ const UserOrdersPage = () => {
     fetchOrders();
   }, [user?.email]);
 
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
+
+    try {
+      await apiClient.post(`/api/orders/${orderId}/cancel`);
+      alert('Order cancelled successfully');
+      // Refresh orders list
+      const response = await apiClient.get('/api/orders', {
+        params: { email: user?.email }
+      });
+
+      const formattedOrders = response.data.map(order => ({
+        ...order,
+        items: order.items?.map(entry => ({
+          _id: entry._id,
+          item: {
+            ...entry.item,
+            imageUrl: entry.item.imageUrl,
+          },
+          quantity: entry.quantity
+        })) || [],
+        createdAt: new Date(order.createdAt).toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        paymentStatus: order.paymentStatus?.toLowerCase() || 'pending'
+      }));
+      setOrders(formattedOrders);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel order. Please try again.');
+      console.error('Error cancelling order:', err);
+    }
+  };
+
   const statusStyles = {
     processing: {
       color: 'text-amber-400',
@@ -68,6 +107,12 @@ const UserOrdersPage = () => {
       bg: 'bg-green-900/20',
       icon: <FiCheckCircle className="text-lg" />,
       label: 'Delivered'
+    },
+    cancelled: {
+      color: 'text-red-400',
+      bg: 'bg-red-900/20',
+      icon: <FiXCircle className="text-lg" />,
+      label: 'Cancelled'
     },
     pending: {
       color: 'text-yellow-400',
@@ -153,6 +198,7 @@ const UserOrdersPage = () => {
                   <th className="p-4 text-left text-amber-400">Price</th>
                   <th className="p-4 text-left text-amber-400">Payment</th>
                   <th className="p-4 text-left text-amber-400">Status</th>
+                  <th className="p-4 text-left text-amber-400">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -249,6 +295,21 @@ const UserOrdersPage = () => {
                             {status.label}
                           </span>
                         </div>
+                      </td>
+
+                      <td className="p-4">
+                        {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                          <button
+                            onClick={() => handleCancelOrder(order._id)}
+                            className="px-4 py-2 bg-red-600/30 hover:bg-red-600/50 text-red-300 border border-red-500/50 rounded-lg text-sm transition-colors flex items-center gap-2"
+                          >
+                            <FiXCircle className="text-base" />
+                            Cancel Order
+                          </button>
+                        )}
+                        {(order.status === 'cancelled' || order.status === 'delivered') && (
+                          <span className="text-amber-400/60 text-sm">-</span>
+                        )}
                       </td>
                     </tr>
                   );
