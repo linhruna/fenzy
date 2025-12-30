@@ -14,7 +14,7 @@ const ListItems = () => {
     const fetchItems = async () => {
       try {
         const { data } = await axios.get(
-          "https://foodie-frenzy-backend.onrender.com/api/items"
+          "https://food-order-web-pvuv.onrender.comapi/items"
         );
         setItems(data);
       } catch (err) {
