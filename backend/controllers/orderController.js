@@ -135,7 +135,6 @@ export const confirmPayment = async (req, res) => {
                 { new: true }
             );
             if (!order) return res.status(404).json({ message: 'Order not found' });
-            
             // Validate and decrease item quantities now that payment is confirmed
             for (const orderItem of order.items) {
                 if (orderItem.itemId) {

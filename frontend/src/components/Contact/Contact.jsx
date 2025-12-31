@@ -25,7 +25,7 @@ const Contact = () => {
     const encodedMessage = encodeURIComponent(message);
 
     // 3. Your WhatsApp number in international format (no “+” or spaces)
-    const whatsappNumber = '932261605'
+    const whatsappNumber = '983734860'
 
     // 4. Build the WhatsApp Web URL:
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
@@ -90,7 +90,7 @@ const Contact = () => {
               <div className="pl-12 space-y-2 relative z-10">
                 <div className="flex items-center text-amber-100 font-light">
                   <FiGlobe className="text-green-400 text-xl mr-2" />
-                  +84 932261605
+                  +84 983734860
                 </div>
               </div>
             </div>
