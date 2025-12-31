@@ -34,6 +34,21 @@ export const createOrder = async (req, res) => {
             };
         });
 
+        // Validate quantity before creating order
+        for (const orderItem of orderItems) {
+            if (orderItem.itemId) {
+                const item = await Item.findById(orderItem.itemId);
+                if (!item) {
+                    return res.status(404).json({ message: `Item not found: ${orderItem.item.name}` });
+                }
+                if (item.quantity < orderItem.quantity) {
+                    return res.status(400).json({ 
+                        message: `Insufficient quantity for ${orderItem.item.name}. Available: ${item.quantity}, Requested: ${orderItem.quantity}` 
+                    });
+                }
+            }
+        }
+
         // Decrease item quantities for COD orders (immediately) or online orders (after payment confirmation)
         // For COD, decrease immediately. For online, we'll decrease in confirmPayment
         if (paymentMethod !== 'online') {
@@ -121,14 +136,22 @@ export const confirmPayment = async (req, res) => {
             );
             if (!order) return res.status(404).json({ message: 'Order not found' });
             
-            // Decrease item quantities now that payment is confirmed
+            // Validate and decrease item quantities now that payment is confirmed
             for (const orderItem of order.items) {
                 if (orderItem.itemId) {
                     const item = await Item.findById(orderItem.itemId);
-                    if (item) {
-                        item.quantity = Math.max(0, item.quantity - orderItem.quantity);
-                        await item.save();
+                    if (!item) {
+                        console.error(`Item not found: ${orderItem.itemId}`);
+                        continue;
                     }
+                    if (item.quantity < orderItem.quantity) {
+                        console.error(`Insufficient quantity for item ${item.name}. Available: ${item.quantity}, Requested: ${orderItem.quantity}`);
+                        // Still process the order but log the error (item might have been sold out between order creation and payment)
+                        item.quantity = 0;
+                    } else {
+                        item.quantity = item.quantity - orderItem.quantity;
+                    }
+                    await item.save();
                 }
             }
             

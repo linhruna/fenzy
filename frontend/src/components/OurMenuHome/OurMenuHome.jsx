@@ -17,7 +17,9 @@ const OurMenuHome = () => {
   useEffect(() => {
     apiClient.get('/api/items')
       .then(res => {
-        const grouped = res.data.reduce((acc, item) => {
+        // Filter items with quantity > 0
+        const availableItems = res.data.filter(item => (item.quantity ?? 0) > 0);
+        const grouped = availableItems.reduce((acc, item) => {
           acc[item.category] = acc[item.category] || [];
           acc[item.category].push(item);
           return acc;
@@ -94,7 +96,7 @@ const OurMenuHome = () => {
                   <div className="mt-auto flex items-center gap-4 justify-between">
                     <div className="bg-amber-100/10 backdrop-blur-sm px-3 py-1 rounded-2xl shadow-lg">
                       <span className="text-xl font-bold text-amber-300 font-dancingscript">
-                        ₹{Number(item.price).toFixed(2)}
+                        ${Number(item.price).toFixed(2)}
                       </span>
                     </div>
 

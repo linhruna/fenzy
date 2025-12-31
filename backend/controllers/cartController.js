@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import { CartItem } from '../modals/cartItem.js';
+import Item from '../modals/item.js';
 
 // GET /api/cart
 export const getCart = asyncHandler(async (req, res) => {
@@ -21,10 +22,26 @@ export const addToCart = asyncHandler(async (req, res) => {
         throw new Error('itemId and quantity (number) are required');
     }
 
+    // Check item availability
+    const item = await Item.findById(itemId);
+    if (!item) {
+        res.status(404);
+        throw new Error('Item not found');
+    }
+    if (item.quantity <= 0) {
+        res.status(400);
+        throw new Error(`Item "${item.name}" is out of stock`);
+    }
+
     let cartItem = await CartItem.findOne({ user: req.user._id, item: itemId });
 
     if (cartItem) {
-        cartItem.quantity = Math.max(1, cartItem.quantity + quantity);
+        const newQuantity = cartItem.quantity + quantity;
+        if (newQuantity > item.quantity) {
+            res.status(400);
+            throw new Error(`Insufficient quantity. Available: ${item.quantity}, Requested: ${newQuantity}`);
+        }
+        cartItem.quantity = newQuantity;
         if (cartItem.quantity < 1) {
             await cartItem.remove();
             return res.json({ _id: cartItem._id.toString(), item: cartItem.item, quantity: 0 });
@@ -36,6 +53,12 @@ export const addToCart = asyncHandler(async (req, res) => {
             item: cartItem.item,
             quantity: cartItem.quantity,
         });
+    }
+
+    // For new cart item, check quantity
+    if (quantity > item.quantity) {
+        res.status(400);
+        throw new Error(`Insufficient quantity. Available: ${item.quantity}, Requested: ${quantity}`);
     }
 
     cartItem = await CartItem.create({
@@ -59,6 +82,22 @@ export const updateCartItem = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error('Cart item not found');
     }
+    
+    // Check item availability
+    const item = await Item.findById(cartItem.item);
+    if (!item) {
+        res.status(404);
+        throw new Error('Item not found');
+    }
+    if (item.quantity <= 0) {
+        res.status(400);
+        throw new Error(`Item "${item.name}" is out of stock`);
+    }
+    if (quantity > item.quantity) {
+        res.status(400);
+        throw new Error(`Insufficient quantity. Available: ${item.quantity}, Requested: ${quantity}`);
+    }
+    
     cartItem.quantity = Math.max(1, quantity);
     await cartItem.save();
     await cartItem.populate('item');

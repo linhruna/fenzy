@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import apiClient from '../../../services/api';
 import { FiUpload, FiHeart, FiStar } from 'react-icons/fi';
-import { FaRupeeSign } from 'react-icons/fa';
 import { styles } from '../../../assets/dummyadmin';
 
 const AddItems = () => {
@@ -151,9 +150,9 @@ const AddItems = () => {
                 </div>
 
                 <div>
-                  <label className={styles.label}>Price (₹) *</label>
+                  <label className={styles.label}>Price ($) *</label>
                   <div className={styles.relativeInput}>
-                    <FaRupeeSign className={styles.rupeeIcon} />
+                    <span className={styles.rupeeIcon}>$</span>
                     <input
                       type="number"
                       name="price"

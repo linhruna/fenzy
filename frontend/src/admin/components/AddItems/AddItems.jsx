@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { FiUpload, FiHeart, FiStar } from 'react-icons/fi';
-import { FaRupeeSign } from 'react-icons/fa';
 import AdminNavbar from '../Navbar/Navbar';
 import { styles } from '../../assets/dummyadmin';
 
@@ -154,10 +153,10 @@ const AddItems = () => {
                   </div>
                   <div>
                     <label className="block mb-2 text-base sm:text-lg text-amber-400">
-                      Price (₹)
+                      Price ($)
                     </label>
                     <div className={styles.relativeInput}>
-                      <FaRupeeSign className={styles.rupeeIcon} />
+                      <span className={styles.rupeeIcon}>$</span>
                       <input
                         type="number"
                         name="price"

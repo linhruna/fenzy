@@ -63,7 +63,7 @@ const CartPage = () => {
                         {item.name}
                       </h3>
                       <p className="text-amber-100/80 font-cinzel mt-1">
-                        ₹{Number(item.price).toFixed(2)}
+                        ${Number(item.price).toFixed(2)}
                       </p>
                     </div>
 
@@ -94,7 +94,7 @@ const CartPage = () => {
                         <span className="text-amber-100">Remove</span>
                       </button>
                       <p className="text-sm font-dancingscript text-amber-300">
-                        ₹{(Number(item.price) * quantity).toFixed(2)}
+                        ${(Number(item.price) * quantity).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -111,7 +111,7 @@ const CartPage = () => {
                 </Link>
                 <div className="flex items-center gap-8">
                   <h2 className="text-3xl font-dancingscript text-amber-100">
-                    Total: ₹{totalAmount.toFixed(2)}
+                    Total: ${totalAmount.toFixed(2)}
                   </h2>
                   <Link
                     to="/checkout"

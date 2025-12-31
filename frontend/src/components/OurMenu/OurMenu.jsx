@@ -22,8 +22,10 @@ const OurMenu = () => {
     const fetchMenu = async () => {
       try {
         const res = await apiClient.get('/api/items');
-        setAllItems(res.data);
-        const byCategory = res.data.reduce((acc, item) => {
+        // Filter items with quantity > 0
+        const availableItems = res.data.filter(item => (item.quantity ?? 0) > 0);
+        setAllItems(availableItems);
+        const byCategory = availableItems.reduce((acc, item) => {
           const cat = item.category || 'Uncategorized';
           acc[cat] = acc[cat] || [];
           acc[cat].push(item);
@@ -116,7 +118,7 @@ const OurMenu = () => {
                   <div className="mt-auto flex items-center gap-4 justify-between">
                     <div className="bg-amber-100/10 backdrop-blur-sm px-3 py-1 rounded-2xl shadow-lg">
                       <span className="text-xl font-bold text-amber-300 font-dancingscript">
-                        ₹{Number(item.price).toFixed(2)}
+                        ${Number(item.price).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

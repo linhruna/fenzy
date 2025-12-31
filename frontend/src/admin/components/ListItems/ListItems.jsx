@@ -74,7 +74,7 @@ const ListItems = () => {
                     <th className={styles.th}>Image</th>
                     <th className={styles.th}>Name</th>
                     <th className={styles.th}>Category</th>
-                    <th className={styles.th}>Price (₹)</th>
+                    <th className={styles.th}>Price ($)</th>
                     <th className={styles.th}>Rating</th>
                     <th className={styles.th}>Hearts</th>
                     <th className={styles.thCenter}>Delete</th>
@@ -97,7 +97,7 @@ const ListItems = () => {
                         </div>
                       </td>
                       <td className={styles.categoryCell}>{item.category}</td>
-                      <td className={styles.priceCell}>₹{item.price}</td>
+                      <td className={styles.priceCell}>${item.price}</td>
                       <td className={styles.ratingCell}>
                         <div className="flex gap-1">{renderStars(item.rating)}</div>
                       </td>

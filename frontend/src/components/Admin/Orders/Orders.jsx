@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiBox, FiXCircle } from 'react-icons/fi';
+import { FiUser, FiBox } from 'react-icons/fi';
 import apiClient from '../../../services/api';
 import { statusStyles, paymentMethodDetails, tableClasses, layoutClasses, iconMap } from '../../../admin/assets/dummyadmin';
 
@@ -36,43 +36,46 @@ const Orders = () => {
     fetchOrders();
   }, []);
 
-  const handleStatusChange = async (orderId, newStatus) => {
-    try {
-      await apiClient.put(`/api/orders/getall/${orderId}`, {
-        status: newStatus,
-      });
-      setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
-      alert('Order status updated successfully');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update order status');
-    }
-  };
-
-  const handleCancelOrder = async (orderId) => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) {
-      return;
-    }
-
-    try {
-      await apiClient.post(`/api/orders/getall/${orderId}/cancel`);
-      alert('Order cancelled successfully');
-      // Refresh orders list
-      const response = await apiClient.get('/api/orders/getall');
-      const formatted = response.data.map(order => ({
-        ...order,
-        address: order.address ?? order.shippingAddress?.address ?? '',
-        city: order.city ?? order.shippingAddress?.city ?? '',
-        zipCode: order.zipCode ?? order.shippingAddress?.zipCode ?? '',
-        phone: order.phone ?? '',
-        items: order.items?.map(e => ({ _id: e._id, item: e.item, quantity: e.quantity })) || [],
-        createdAt: new Date(order.createdAt).toLocaleDateString('en-IN', {
-          year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
-        }),
-      }));
-      setOrders(formatted);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to cancel order. Please try again.');
-      console.error('Error cancelling order:', err);
+  const handleStatusChange = async (orderId, newStatus, currentStatus) => {
+    // If changing to cancelled, use cancel endpoint to restore quantity
+    if (newStatus === 'cancelled' && currentStatus !== 'cancelled') {
+      if (!window.confirm('Are you sure you want to cancel this order?')) {
+        // Reset the order status in the state to prevent UI mismatch
+        setOrders(orders.map(o => o._id === orderId ? { ...o, status: currentStatus } : o));
+        return;
+      }
+      try {
+        await apiClient.post(`/api/orders/getall/${orderId}/cancel`);
+        alert('Order cancelled successfully');
+        // Refresh orders list
+        const response = await apiClient.get('/api/orders/getall');
+        const formatted = response.data.map(order => ({
+          ...order,
+          address: order.address ?? order.shippingAddress?.address ?? '',
+          city: order.city ?? order.shippingAddress?.city ?? '',
+          zipCode: order.zipCode ?? order.shippingAddress?.zipCode ?? '',
+          phone: order.phone ?? '',
+          items: order.items?.map(e => ({ _id: e._id, item: e.item, quantity: e.quantity })) || [],
+          createdAt: new Date(order.createdAt).toLocaleDateString('en-IN', {
+            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+          }),
+        }));
+        setOrders(formatted);
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to cancel order. Please try again.');
+        console.error('Error cancelling order:', err);
+      }
+    } else {
+      // For other status changes, use regular update
+      try {
+        await apiClient.put(`/api/orders/getall/${orderId}`, {
+          status: newStatus,
+        });
+        setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+        alert('Order status updated successfully');
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to update order status');
+      }
     }
   };
 
@@ -100,7 +103,7 @@ const Orders = () => {
               <table className={tableClasses.table}>
                 <thead className={tableClasses.headerRow}>
                   <tr>
-                    {['Order ID', 'Customer', 'Address', 'Items', 'Total Items', 'Price', 'Payment', 'Status', 'Actions'].map(h => (
+                    {['Order ID', 'Customer', 'Address', 'Items', 'Total Items', 'Price', 'Payment', 'Status'].map(h => (
                       <th key={h} className={tableClasses.headerCell + (h === 'Total Items' ? ' text-center' : '')}>{h}</th>
                     ))}
                   </tr>
@@ -162,7 +165,7 @@ const Orders = () => {
                                     {itm.item.name}
                                   </span>
                                   <div className="flex items-center gap-2 text-xs text-amber-400/60">
-                                    <span>₹{itm.item.price.toFixed(2)}</span>
+                                    <span>${itm.item.price.toFixed(2)}</span>
                                     <span>•</span>
                                     <span>x{itm.quantity}</span>
                                   </div>
@@ -184,7 +187,7 @@ const Orders = () => {
                             tableClasses.cellBase + " text-amber-300 text-lg"
                           }
                         >
-                          ₹{totalPrice.toFixed(2)}
+                          ${totalPrice.toFixed(2)}
                         </td>
                         <td className={tableClasses.cellBase}>
                           <div className="flex flex-col gap-2">
@@ -209,7 +212,7 @@ const Orders = () => {
                             <select
                               value={order.status}
                               onChange={(e) =>
-                                handleStatusChange(order._id, e.target.value)
+                                handleStatusChange(order._id, e.target.value, order.status)
                               }
                               className={`px-4 py-2 rounded-lg ${stat.bg} ${stat.color} border border-amber-500/20 text-sm cursor-pointer`}
                             >
@@ -226,20 +229,6 @@ const Orders = () => {
                                 ))}
                             </select>
                           </div>
-                        </td>
-                        <td className={tableClasses.cellBase}>
-                          {order.status !== 'cancelled' && order.status !== 'delivered' && (
-                            <button
-                              onClick={() => handleCancelOrder(order._id)}
-                              className="px-3 py-2 bg-red-600/30 hover:bg-red-600/50 text-red-300 border border-red-500/50 rounded-lg text-sm transition-colors flex items-center gap-2"
-                            >
-                              <FiXCircle className="text-base" />
-                              Cancel
-                            </button>
-                          )}
-                          {(order.status === 'cancelled' || order.status === 'delivered') && (
-                            <span className="text-amber-400/60 text-sm">-</span>
-                          )}
                         </td>
                       </tr>
                     );

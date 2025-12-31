@@ -88,7 +88,7 @@ const ListItems = () => {
                     <th className={styles.th}>Image</th>
                     <th className={styles.th}>Name</th>
                     <th className={styles.th}>Category</th>
-                    <th className={styles.th}>Price (₹)</th>
+                    <th className={styles.th}>Price ($)</th>
                     <th className={styles.th}>Rating</th>
                     <th className={styles.th}>Quantity</th>
                     <th className={styles.thCenter}>Actions</th>
@@ -120,7 +120,7 @@ const ListItems = () => {
                             className="w-20 bg-amber-900/30 border border-amber-500 rounded px-2 py-2 text-amber-100 text-base h-9"
                           />
                         ) : (
-                          `₹${item.price}`
+                          `$${item.price}`
                         )}
                       </td>
                       <td className={styles.ratingCell}>

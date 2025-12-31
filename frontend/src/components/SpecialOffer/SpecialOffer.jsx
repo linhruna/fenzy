@@ -18,7 +18,12 @@ const SpecialOffer = () => {
   useEffect(() => {
     apiClient
       .get('/api/items')
-      .then(res => setItems(res.data.items ?? res.data))
+      .then(res => {
+        const itemsData = res.data.items ?? res.data;
+        // Filter items with quantity > 0
+        const availableItems = itemsData.filter(item => (item.quantity ?? 0) > 0);
+        setItems(availableItems);
+      })
       .catch(err => console.error(err));
   }, []);
 
@@ -75,7 +80,7 @@ const SpecialOffer = () => {
                   <p className="text-gray-300 mb-5 text-sm">{item.description}</p>
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-2xl font-bold text-amber-400">
-                      ₹{Number(item.price).toFixed(2)}
+                      ${Number(item.price).toFixed(2)}
                     </span>
 
                     {qty > 0 ? (
